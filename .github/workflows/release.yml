@@ -1,0 +1,104 @@
+name: Package plugin
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux-x86_64
+            rust_target: x86_64-unknown-linux-gnu
+          - runner: windows-2025
+            platform: windows-x86_64
+            rust_target: x86_64-pc-windows-msvc
+            suffix: .exe
+          - runner: macos-15-intel
+            platform: macos-x86_64
+            rust_target: x86_64-apple-darwin
+          - runner: macos-15
+            platform: macos-aarch64
+            rust_target: aarch64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '12.0'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Build and test
+        shell: bash
+        run: |
+          rustup toolchain install 1.100.0 --profile minimal
+          cargo +1.100.0 test --locked
+          cargo +1.100.0 build --locked --release
+      - name: Audit Rust dependencies
+        shell: bash
+        run: |
+          cargo +1.100.0 install cargo-about --version 0.9.3 --features cli --locked
+          cargo +1.100.0 fetch --locked
+          cargo +1.100.0 about generate --frozen --target "${{ matrix.rust_target }}" --fail \
+            --output-file third-party.html about.hbs
+      - name: Create and verify archive
+        shell: bash
+        env:
+          PACKAGE_PLATFORM: ${{ matrix.platform }}
+          BINARY_SUFFIX: ${{ matrix.suffix }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version=$(python -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+            [[ "$GITHUB_REF_NAME" == "v$version" ]]
+          fi
+          python tools/package.py --binary "target/release/ndm-yt-dlp-engine$BINARY_SUFFIX" \
+            --platform "$PACKAGE_PLATFORM" --audit third-party.html
+          cd dist
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          sidecar, = Path(".").glob("*.zip.sha256")
+          digest, filename = sidecar.read_text(encoding="ascii").split()
+          with Path(filename).open("rb") as package:
+              assert hashlib.file_digest(package, "sha256").hexdigest() == digest
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: plugin-${{ matrix.platform }}
+          path: dist/
+          if-no-files-found: error
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: plugin-*
+          merge-multiple: true
+          path: dist
+      - name: Publish matching packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist
+          for platform in linux-x86_64 windows-x86_64 macos-x86_64 macos-aarch64; do
+            asset="ndm-yt-dlp-${GITHUB_REF_NAME#v}-$platform.zip"
+            test -f "$asset"
+            test -f "$asset.sha256"
+          done
+          sha256sum --check ./*.sha256
+          gh release create "$GITHUB_REF_NAME" ./* --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes

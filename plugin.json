@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "yt-dlp",
+  "version": "0.1.0",
+  "name": {"en": "YouTube", "zh": "YouTube"},
+  "description": {"en": "Download YouTube video or audio with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube 视频或音频。"},
+  "engine": "ndm-yt-dlp-engine",
+  "engine_protocol": 1,
+  "inputs": [{"schemes": ["https", "http"], "hosts": ["youtube.com", "youtu.be", "youtube-nocookie.com"]}],
+  "limits": {"active_tasks": 3, "download_threads": 16},
+  "panel": "panel.js",
+  "options": [
+    {"key": "quality", "kind": "choice", "label": {"en": "Quality", "zh": "画质"}, "default": "best", "choices": [
+      {"value": "best", "label": {"en": "Best available", "zh": "最高可用画质"}},
+      {"value": "1080", "label": {"en": "Up to 1080p", "zh": "最高 1080p"}},
+      {"value": "720", "label": {"en": "Up to 720p", "zh": "最高 720p"}},
+      {"value": "480", "label": {"en": "Up to 480p", "zh": "最高 480p"}},
+      {"value": "audio", "label": {"en": "Audio only", "zh": "仅音频"}}
+    ]},
+    {"key": "playlist", "kind": "boolean", "label": {"en": "Download the playlist", "zh": "下载播放列表"}, "default": false}
+  ],
+  "tools": [
+    {"id": "download", "name": {"en": "YouTube download", "zh": "YouTube 下载"}, "description": {"en": "Download a YouTube video or playlist through NDM Next.", "zh": "通过 NDM Next 下载 YouTube 视频或播放列表。"}},
+    {"id": "audio", "name": {"en": "YouTube audio", "zh": "YouTube 音频"}, "description": {"en": "Download the audio of a YouTube video through NDM Next.", "zh": "通过 NDM Next 下载 YouTube 视频的音频。"}, "defaults": {"quality": "audio"}}
+  ]
+}
