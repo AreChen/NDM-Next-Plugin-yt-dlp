@@ -239,11 +239,12 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "ndm-plugin-sdk"
 version = "0.1.0"
-source = "git+https://github.com/AreChen/NDM-Next.git?rev=444355c3540d5cae8c4f6e684c5cd7926ad445ac#444355c3540d5cae8c4f6e684c5cd7926ad445ac"
+source = "git+https://github.com/AreChen/NDM-Next.git?rev=0629b1c3d2ee48f12bf914b3d84067602ecd43a3#0629b1c3d2ee48f12bf914b3d84067602ecd43a3"
 dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "url",
  "uuid",
 ]
 
@@ -255,7 +256,6 @@ dependencies = [
  "ndm-plugin-sdk",
  "serde_json",
  "tempfile",
- "url",
 ]
 
 [[package]]

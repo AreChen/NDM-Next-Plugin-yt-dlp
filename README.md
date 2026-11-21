@@ -2,18 +2,23 @@
 
 This engine downloads YouTube videos, audio and playlists through NDM Next.
 The package includes pinned yt-dlp and Deno runtimes. NDM Next supplies
-FFmpeg when a video needs separate audio and video tracks. These tracks are
-merged into an MKV file. A single downloaded stream keeps its original
-container. The engine reuses yt-dlp's partial files when resuming.
+FFmpeg when a video needs separate audio and video tracks. **Prefer native**
+keeps the original container where possible. You can also choose MP4, WebM,
+or MKV. The engine copies compatible source streams and reuses yt-dlp's
+partial files when resuming. Older desktop builds with limited WebM output
+support can fall back to MKV for split streams.
 
 Install from the NDM Next plugin market or import the matching release ZIP.
 Paste a YouTube URL in New download and select quality, playlist and subtitle
-options. Choose uploaded subtitles or include automatic subtitles. Enter
-comma-separated language codes such as `en,zh-Hans,zh-Hant`. The available
-languages depend on the video. Subtitle files are saved alongside the media.
+options. Prefer H.265 or H.264 among the source tracks at the chosen
+resolution. H.265 playback depends on the device. Choose uploaded or
+automatic subtitles, then select one or more languages from the list. Command
+line calls use comma-separated codes such as `en,zh-Hans,zh-Hant`. Subtitle
+files are saved alongside the media when the video provides those tracks.
 
 Open **Settings** on the installed YouTube card to save defaults and set a
-separate proxy. With the switch on, enter an HTTP(S) or SOCKS proxy URL.
+separate proxy. With the switch on, select the protocol and enter a host and
+port. You can paste a complete HTTP(S) or SOCKS proxy URL as well.
 With the switch off, yt-dlp uses the system network settings. Codex CLI
 downloads use the saved defaults when AI integration is enabled.
 
@@ -25,10 +30,13 @@ digests are recorded in [runtime-lock.json](runtime-lock.json).
 ## 中文
 
 在 NDM Next 的插件市场安装 YouTube 插件，然后粘贴链接新建下载。可选择
-画质、仅音频、播放列表和字幕。视频与音频分开下载时合并为 MKV，单一音视频流
-保留原封装。字幕可以选择仅作者上传，或同时下载自动字幕。语言用逗号分隔，
-例如 `en,zh-Hans,zh-Hant`，以视频提供的语言为准。字幕文件随视频一起保存。
+画质、仅音频、播放列表和字幕。默认尽量保留原生封装，也可以指定 MP4、WebM 或
+MKV。插件直接复制兼容的源轨。同分辨率可优先选用源站提供的 H.265 或 H.264，
+H.265 的播放取决于设备。旧版媒体工具的 WebM 合并可回退为 MKV。
+
+字幕可选择仅作者上传或包含自动字幕，并从列表勾选多种语言。命令行调用可传入
+逗号分隔的代码，例如 `en,zh-Hans,zh-Hant`。视频提供的相应字幕会随视频保存。
 
 在已安装的 YouTube 卡片上打开 **设置** 可保存默认选项。开启 **使用独立代理**
-后填入 HTTP(S) 或 SOCKS 代理地址。关闭时沿用系统网络设置。开启 AI 集成后，
+后请选择 HTTP(S) 或 SOCKS 协议，再填主机和端口，也可以粘贴完整地址。关闭时沿用系统网络设置。开启 AI 集成后，
 Codex CLI 发起的新任务也会使用这些默认选项。

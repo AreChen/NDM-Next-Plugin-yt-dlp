@@ -17,15 +17,50 @@
       {"value": "480", "label": {"en": "Up to 480p", "zh": "最高 480p"}},
       {"value": "audio", "label": {"en": "Audio only", "zh": "仅音频"}}
     ]},
+    {"key": "video-container", "kind": "choice", "label": {"en": "Video container", "zh": "视频封装"}, "help": {"en": "Native preserves the source container where possible. Choosing MP4, WebM, or MKV copies compatible original streams.", "zh": "原生优先尽量保留源站封装。选择 MP4、WebM 或 MKV 时会直接复制兼容的原始轨道。"}, "default": "auto", "choices": [
+      {"value": "auto", "label": {"en": "Prefer native", "zh": "原生优先"}},
+      {"value": "mp4", "label": {"en": "MP4", "zh": "MP4"}},
+      {"value": "webm", "label": {"en": "WebM", "zh": "WebM"}},
+      {"value": "mkv", "label": {"en": "MKV", "zh": "MKV"}}
+    ]},
+    {"key": "video-codec", "kind": "choice", "label": {"en": "Video codec", "zh": "视频编码偏好"}, "help": {"en": "Prefer an available source codec at the same resolution. HEVC playback may require device support. WebM uses its compatible codecs.", "zh": "在同分辨率中优先选可用的源轨编码。播放 H.265 需要设备支持。WebM 会选该封装支持的编码。"}, "default": "auto", "choices": [
+      {"value": "auto", "label": {"en": "Automatic", "zh": "自动"}},
+      {"value": "h265", "label": {"en": "Prefer H.265", "zh": "优先 H.265"}},
+      {"value": "h264", "label": {"en": "Prefer H.264", "zh": "优先 H.264"}}
+    ]},
     {"key": "playlist", "kind": "boolean", "label": {"en": "Download the playlist", "zh": "下载播放列表"}, "default": false},
     {"key": "subtitles", "kind": "choice", "label": {"en": "Subtitles", "zh": "字幕"}, "default": "off", "choices": [
       {"value": "off", "label": {"en": "Off", "zh": "关闭"}},
       {"value": "manual", "label": {"en": "Uploaded subtitles", "zh": "作者上传的字幕"}},
       {"value": "auto", "label": {"en": "Uploaded and automatic", "zh": "含自动字幕"}}
     ]},
-    {"key": "subtitle-languages", "kind": "text", "max_length": 128, "label": {"en": "Subtitle languages", "zh": "字幕语言"}, "default": "en,zh-Hans,zh-Hant"},
+    {"key": "subtitle-languages", "kind": "text", "max_length": 128, "label": {"en": "Subtitle languages", "zh": "字幕语言"}, "help": {"en": "Select multiple languages. Available tracks depend on the video. For automation use comma-separated codes such as en,zh-Hans.", "zh": "可以勾选多种语言，实际下载以视频提供的字幕为准。自动化调用可用逗号分隔的代码，例如 en,zh-Hans。"}, "default": "en,zh-Hans,zh-Hant", "editor": {"kind": "multi_select", "max_selected": 16, "choices": [
+      {"value": "zh-Hans", "label": {"en": "Chinese (Simplified)", "zh": "简体中文"}},
+      {"value": "zh-Hant", "label": {"en": "Chinese (Traditional)", "zh": "繁体中文"}},
+      {"value": "zh", "label": {"en": "Chinese", "zh": "中文"}},
+      {"value": "en", "label": {"en": "English", "zh": "英语"}},
+      {"value": "en-orig", "label": {"en": "English (Original)", "zh": "英语（原始）"}},
+      {"value": "ja", "label": {"en": "Japanese", "zh": "日语"}},
+      {"value": "ko", "label": {"en": "Korean", "zh": "韩语"}},
+      {"value": "es", "label": {"en": "Spanish", "zh": "西班牙语"}},
+      {"value": "fr", "label": {"en": "French", "zh": "法语"}},
+      {"value": "de", "label": {"en": "German", "zh": "德语"}},
+      {"value": "pt", "label": {"en": "Portuguese", "zh": "葡萄牙语"}},
+      {"value": "pt-BR", "label": {"en": "Portuguese (Brazil)", "zh": "葡萄牙语（巴西）"}},
+      {"value": "it", "label": {"en": "Italian", "zh": "意大利语"}},
+      {"value": "ru", "label": {"en": "Russian", "zh": "俄语"}},
+      {"value": "ar", "label": {"en": "Arabic", "zh": "阿拉伯语"}},
+      {"value": "hi", "label": {"en": "Hindi", "zh": "印地语"}},
+      {"value": "vi", "label": {"en": "Vietnamese", "zh": "越南语"}},
+      {"value": "id", "label": {"en": "Indonesian", "zh": "印度尼西亚语"}},
+      {"value": "th", "label": {"en": "Thai", "zh": "泰语"}},
+      {"value": "tr", "label": {"en": "Turkish", "zh": "土耳其语"}},
+      {"value": "nl", "label": {"en": "Dutch", "zh": "荷兰语"}},
+      {"value": "pl", "label": {"en": "Polish", "zh": "波兰语"}},
+      {"value": "uk", "label": {"en": "Ukrainian", "zh": "乌克兰语"}}
+    ]}},
     {"key": "proxy-enabled", "kind": "boolean", "label": {"en": "Use a separate proxy", "zh": "使用独立代理"}, "default": false},
-    {"key": "proxy-url", "kind": "text", "max_length": 1024, "label": {"en": "Proxy URL", "zh": "代理地址"}}
+    {"key": "proxy-url", "kind": "text", "max_length": 1024, "label": {"en": "Proxy address", "zh": "代理地址"}, "help": {"en": "Choose the protocol, then enter a host and port such as 127.0.0.1:8080 or [::1]:1080. A pasted full URL supplies its protocol.", "zh": "先选代理协议，再输入主机和端口，例如 127.0.0.1:8080 或 [::1]:1080。粘贴完整地址时使用地址中的协议。"}, "editor": {"kind": "proxy_address", "schemes": ["http", "https", "socks5", "socks5h", "socks4", "socks4a"], "required_when": "proxy-enabled"}}
   ],
   "tools": [
     {"id": "download", "name": {"en": "YouTube download", "zh": "YouTube 下载"}, "description": {"en": "Download a YouTube video or playlist through NDM Next.", "zh": "通过 NDM Next 下载 YouTube 视频或播放列表。"}},

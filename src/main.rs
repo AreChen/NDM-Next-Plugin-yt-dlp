@@ -84,21 +84,7 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
             .arg("--js-runtimes")
             .arg(format!("deno:{}", deno.display()));
     }
-    if let Some(media) = &media {
-        // The desktop's local-only FFmpeg includes Matroska, including on Windows and macOS.
-        command
-            .arg("--ffmpeg-location")
-            .arg(media)
-            .args(["--merge-output-format", "mkv"]);
-    }
-    let quality = request
-        .options
-        .get("quality")
-        .and_then(Value::as_str)
-        .unwrap_or("best");
-    command
-        .arg("--format")
-        .arg(format_expression(quality, media.is_some())?);
+    configure_video(&mut command, &request.options, media.as_deref())?;
     let _header_config = if headers.is_empty() {
         None
     } else {
@@ -209,20 +195,20 @@ fn configure_subtitles(
     command: &mut Command,
     options: &Map<String, Value>,
 ) -> Result<bool, FailureReason> {
-    match options
+    let mode = options
         .get("subtitles")
         .and_then(Value::as_str)
-        .unwrap_or("off")
-    {
-        "off" => return Ok(false),
-        "manual" => command.arg("--write-subs"),
-        "auto" => command.args(["--write-subs", "--write-auto-subs"]),
-        _ => return Err(FailureReason::InvalidOptions),
-    };
+        .unwrap_or("off");
+    if mode == "off" {
+        return Ok(false);
+    }
     let languages = options
         .get("subtitle-languages")
         .and_then(Value::as_str)
         .unwrap_or("en,zh-Hans,zh-Hant");
+    if languages.trim().is_empty() {
+        return Ok(false);
+    }
     let languages: Vec<_> = languages.split(',').map(str::trim).collect();
     if languages.len() > 16
         || languages.iter().any(|language| {
@@ -239,6 +225,11 @@ fn configure_subtitles(
     {
         return Err(FailureReason::InvalidOptions);
     }
+    match mode {
+        "manual" => command.arg("--write-subs"),
+        "auto" => command.args(["--write-subs", "--write-auto-subs"]),
+        _ => return Err(FailureReason::InvalidOptions),
+    };
     command
         .arg("--sub-langs")
         .arg(languages.join(","))
@@ -258,20 +249,12 @@ fn configure_proxy(
         .and_then(Value::as_str)
         .map(str::trim)
         .ok_or(FailureReason::InvalidOptions)?;
-    if !address.contains("://") || address.chars().any(char::is_control) {
-        return Err(FailureReason::InvalidOptions);
-    }
-    let proxy = url::Url::parse(address).map_err(|_| FailureReason::InvalidOptions)?;
-    if !matches!(
-        proxy.scheme(),
-        "http" | "https" | "socks4" | "socks4a" | "socks5" | "socks5h"
-    ) || proxy.host_str().is_none()
-        || !matches!(proxy.path(), "" | "/")
-        || proxy.query().is_some()
-        || proxy.fragment().is_some()
-    {
-        return Err(FailureReason::InvalidOptions);
-    }
+    let proxy = ndm_plugin_sdk::normalize_proxy_address(
+        address,
+        "http",
+        &["http", "https", "socks4", "socks4a", "socks5", "socks5h"],
+    )
+    .map_err(|_| FailureReason::InvalidOptions)?;
     // Set it on this process tree only. Keep proxy credentials out of arguments and temporary files.
     command.env_remove("NO_PROXY").env_remove("no_proxy");
     for key in [
@@ -282,7 +265,7 @@ fn configure_proxy(
         "https_proxy",
         "all_proxy",
     ] {
-        command.env(key, proxy.as_str());
+        command.env(key, &proxy);
     }
     Ok(())
 }
@@ -336,6 +319,8 @@ fn failure_reason(line: &str) -> Option<FailureReason> {
     .any(|message| line.contains(message))
     {
         Some(FailureReason::Network)
+    } else if line.contains("requested format is not available") {
+        Some(FailureReason::Unsupported)
     } else {
         None
     }
@@ -361,17 +346,117 @@ fn executable(name: &str) -> String {
     format!("{name}{}", std::env::consts::EXE_SUFFIX)
 }
 
-fn format_expression(quality: &str, has_media_tools: bool) -> Result<String, FailureReason> {
-    match quality {
-        "audio" => Ok("bestaudio/best".into()),
-        "best" => Ok(if has_media_tools { "bv*+ba/b" } else { "b" }.into()),
-        "1080" | "720" | "480" => Ok(if has_media_tools {
-            format!("bv*[height<={quality}]+ba/b[height<={quality}]")
-        } else {
-            format!("b[height<={quality}]")
-        }),
-        _ => Err(FailureReason::InvalidOptions),
+fn configure_video(
+    command: &mut Command,
+    options: &Map<String, Value>,
+    media: Option<&Path>,
+) -> Result<(), FailureReason> {
+    let quality = options
+        .get("quality")
+        .and_then(Value::as_str)
+        .unwrap_or("best");
+    if let Some(media) = media {
+        command.arg("--ffmpeg-location").arg(media);
     }
+    if quality == "audio" {
+        command.args(["--format", "bestaudio/best"]);
+        return Ok(());
+    }
+    let container = options
+        .get("video-container")
+        .and_then(Value::as_str)
+        .unwrap_or("auto");
+    let codec = options
+        .get("video-codec")
+        .and_then(Value::as_str)
+        .unwrap_or("auto");
+    let codec_sort = match codec {
+        "auto" => None,
+        "h265" => Some("res,vcodec:h265"),
+        "h264" => Some("res,vcodec:h264"),
+        _ => return Err(FailureReason::InvalidOptions),
+    };
+    if let Some(sort) = codec_sort.filter(|_| container != "webm") {
+        command.args(["--format-sort-force", "--format-sort", sort]);
+    }
+    let webm = matches!(container, "auto" | "webm") && media.is_some_and(supports_webm);
+    let can_mux = media.is_some() && (container != "webm" || webm);
+    command
+        .arg("--format")
+        .arg(format_expression(quality, container, can_mux)?);
+    if can_mux {
+        if container == "auto" {
+            if !webm {
+                // Installed desktop versions with the older muxer set can still copy the original streams.
+                command.args(["--merge-output-format", "mkv"]);
+            }
+        } else {
+            command.args([
+                "--merge-output-format",
+                container,
+                "--remux-video",
+                container,
+            ]);
+        }
+    }
+    Ok(())
+}
+
+fn supports_webm(media: &Path) -> bool {
+    let mut command = Command::new(media.join(executable("ffmpeg")));
+    command
+        .args(["-hide_banner", "-muxers"])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000);
+    }
+    command.output().is_ok_and(|output| {
+        output.status.success()
+            && String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .any(|line| line.split_whitespace().nth(1) == Some("webm"))
+    })
+}
+
+fn format_expression(
+    quality: &str,
+    container: &str,
+    can_mux: bool,
+) -> Result<String, FailureReason> {
+    let height = match quality {
+        "best" => String::new(),
+        "1080" | "720" | "480" => format!("[height<={quality}]"),
+        _ => return Err(FailureReason::InvalidOptions),
+    };
+    let (video, audio) = match container {
+        "mp4" => (
+            "[vcodec~='^(avc|h264|hevc|h265|hvc1|hev1|dvhe|dvh1|av0?1|vp0?9|mp4v)']",
+            "[acodec~='^(mp4a|aac|opus|mp3|ac-?3|ec-?3|eac3|alac)']",
+        ),
+        "webm" => (
+            "[vcodec~='^(vp0?8|vp0?9|av0?1)']",
+            "[acodec~='^(opus|vorbis|vrbs)']",
+        ),
+        "auto" | "mkv" => ("", ""),
+        _ => return Err(FailureReason::InvalidOptions),
+    };
+    let direct = if container == "auto" {
+        format!("b{height}")
+    } else {
+        format!("b[ext={container}]{height}")
+    };
+    if !can_mux {
+        return Ok(direct);
+    }
+    if video.is_empty() {
+        return Ok(format!("bv*{height}+ba/b{height}"));
+    }
+    Ok(format!(
+        "bv{height}{video}+ba{audio}/{direct}/b{height}{video}{audio}"
+    ))
 }
 
 fn parse_progress(line: &str) -> (Option<u64>, Option<u64>) {
@@ -435,12 +520,22 @@ mod tests {
     #[test]
     fn permits_manifest_qualities_and_reports_unknown_length() {
         assert_eq!(
-            format_expression("720", true).unwrap(),
+            format_expression("720", "auto", true).unwrap(),
             "bv*[height<=720]+ba/b[height<=720]"
+        );
+        assert_eq!(
+            format_expression("720", "webm", false).unwrap(),
+            "b[ext=webm][height<=720]"
+        );
+        assert!(
+            format_expression("1080", "mp4", true)
+                .unwrap()
+                .contains("opus")
         );
         assert_eq!(parse_progress("64 null"), (Some(64), None));
         assert_eq!(parse_progress("1024 2048"), (Some(1024), Some(2048)));
-        assert!(format_expression("--exec", true).is_err());
+        assert!(format_expression("--exec", "auto", true).is_err());
+        assert!(format_expression("best", "--exec", true).is_err());
     }
 
     #[test]
@@ -470,6 +565,8 @@ mod tests {
             Err(FailureReason::InvalidOptions)
         );
         options.insert("proxy-url".into(), "socks5h://127.0.0.1:1080".into());
+        assert!(configure_proxy(&mut command, &options).is_ok());
+        options.insert("proxy-url".into(), "127.0.0.1:8080".into());
         assert!(configure_proxy(&mut command, &options).is_ok());
         options.insert("subtitles".into(), "auto".into());
         options.insert("subtitle-languages".into(), "en, zh-Hans".into());

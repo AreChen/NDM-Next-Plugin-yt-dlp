@@ -6,10 +6,9 @@ rust-version = "1.100"
 license = "MIT"
 
 [dependencies]
-ndm-plugin-sdk = { git = "https://github.com/AreChen/NDM-Next.git", rev = "444355c3540d5cae8c4f6e684c5cd7926ad445ac" }
+ndm-plugin-sdk = { git = "https://github.com/AreChen/NDM-Next.git", rev = "0629b1c3d2ee48f12bf914b3d84067602ecd43a3" }
 serde_json = "1"
 tempfile = "3"
-url = "2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
