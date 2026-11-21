@@ -220,7 +220,7 @@ fn configure_subtitles(
         _ => return Err(FailureReason::InvalidOptions),
     };
     let languages = options
-        .get("subtitle_languages")
+        .get("subtitle-languages")
         .and_then(Value::as_str)
         .unwrap_or("en,zh-Hans,zh-Hant");
     let languages: Vec<_> = languages.split(',').map(str::trim).collect();
@@ -250,11 +250,11 @@ fn configure_proxy(
     command: &mut Command,
     options: &Map<String, Value>,
 ) -> Result<(), FailureReason> {
-    if options.get("proxy_enabled").and_then(Value::as_bool) != Some(true) {
+    if options.get("proxy-enabled").and_then(Value::as_bool) != Some(true) {
         return Ok(());
     }
     let address = options
-        .get("proxy_url")
+        .get("proxy-url")
         .and_then(Value::as_str)
         .map(str::trim)
         .ok_or(FailureReason::InvalidOptions)?;
@@ -424,6 +424,14 @@ fn stop(child: &mut Child) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn packaged_manifest_is_accepted_by_the_host() {
+        let manifest: ndm_plugin_sdk::PluginManifest =
+            serde_json::from_str(include_str!("../plugin.json")).unwrap();
+        manifest.validate().unwrap();
+    }
+
     #[test]
     fn permits_manifest_qualities_and_reports_unknown_length() {
         assert_eq!(
@@ -456,17 +464,17 @@ mod tests {
         let mut command = Command::new("yt-dlp");
         let mut options = Map::new();
         assert!(configure_proxy(&mut command, &options).is_ok());
-        options.insert("proxy_enabled".into(), true.into());
+        options.insert("proxy-enabled".into(), true.into());
         assert_eq!(
             configure_proxy(&mut command, &options),
             Err(FailureReason::InvalidOptions)
         );
-        options.insert("proxy_url".into(), "socks5h://127.0.0.1:1080".into());
+        options.insert("proxy-url".into(), "socks5h://127.0.0.1:1080".into());
         assert!(configure_proxy(&mut command, &options).is_ok());
         options.insert("subtitles".into(), "auto".into());
-        options.insert("subtitle_languages".into(), "en, zh-Hans".into());
+        options.insert("subtitle-languages".into(), "en, zh-Hans".into());
         assert_eq!(configure_subtitles(&mut command, &options), Ok(true));
-        options.insert("subtitle_languages".into(), "en,--exec".into());
+        options.insert("subtitle-languages".into(), "en,--exec".into());
         assert_eq!(
             configure_subtitles(&mut command, &options),
             Err(FailureReason::InvalidOptions)
