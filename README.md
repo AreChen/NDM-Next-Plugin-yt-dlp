@@ -33,6 +33,9 @@ downloads use the saved defaults when AI integration is enabled. Existing
 installations upgrade under the `yt-dlp` ID, and Codex can use
 `ndm_yt_dlp__download` and `ndm_yt_dlp__audio` for both existing and new sites.
 
+With a desktop and companion extension that support browser page capabilities,
+the extension can submit the current page URL to Media Downloader.
+
 Build with Rust 1.100.0. Use `cargo +1.100.0 test --locked` for local
 verification. GitHub Actions publishes the platform archives and SHA-256
 sidecars for each version tag. The upstream runtime versions and release
@@ -60,3 +63,5 @@ H.265 的播放取决于设备。旧版媒体工具的 WebM 合并可回退为 M
 Codex CLI 发起的新任务也会使用这些默认选项。原 YouTube 插件通过 `yt-dlp`
 这个 ID 升级，Codex 工具 `ndm_yt_dlp__download` 和 `ndm_yt_dlp__audio`
 可调用新增的站点。
+
+配套桌面端和浏览器扩展支持网页解析能力时，可从扩展把当前网页交给流媒体下载插件。

@@ -26,6 +26,7 @@
   }],
   "manual_inputs": [{"schemes": ["https", "http"], "exclude_suffixes": [".torrent"]}],
   "limits": {"active_tasks": 3, "download_threads": 16},
+  "capabilities": {"browser_page": true},
   "panel": "panel.js",
   "options": [
     {"key": "quality", "kind": "choice", "label": {"en": "Quality", "zh": "画质"}, "help": {"en": "Choose a resolution or download an audio-only track if offered by the source.", "zh": "选择分辨率，或下载来源提供的独立音轨。"}, "default": "best", "choices": [

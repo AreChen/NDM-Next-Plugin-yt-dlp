@@ -531,6 +531,7 @@ mod tests {
         let manifest: ndm_plugin_sdk::PluginManifest =
             serde_json::from_str(include_str!("../plugin.json")).unwrap();
         manifest.validate().unwrap();
+        assert!(manifest.capabilities.browser_page);
         for host in [
             "www.youtube.com",
             "www.bilibili.com",
