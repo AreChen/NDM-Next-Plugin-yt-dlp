@@ -70,7 +70,7 @@ def package(binary, platform, destination, audit):
         )
         shutil.copyfile(binary, stage / manifest["engine"])
         (stage / manifest["engine"]).chmod(0o755)
-        for filename in ("panel.js", "README.md", "LICENSE"):
+        for filename in ("panel.js", "README.md", "LICENSE", manifest["skill"]):
             shutil.copyfile(ROOT / filename, stage / filename)
         if audit:
             shutil.copyfile(audit, stage / "THIRD-PARTY-LICENSES.html")

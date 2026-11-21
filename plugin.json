@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "yt-dlp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "name": {"en": "Media Downloader", "zh": "流媒体下载"},
   "description": {"en": "Download videos, audio, and playlists from YouTube, Bilibili, TikTok, and other sites with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube、Bilibili、抖音、TikTok 等网站的视频、音频和播放列表。"},
   "engine": "ndm-yt-dlp-engine",
@@ -28,6 +28,7 @@
   "limits": {"active_tasks": 3, "download_threads": 16},
   "capabilities": {"browser_page": true},
   "panel": "panel.js",
+  "skill": "AI-GUIDE.md",
   "options": [
     {"key": "quality", "kind": "choice", "label": {"en": "Quality", "zh": "画质"}, "help": {"en": "Choose a resolution or download an audio-only track if offered by the source.", "zh": "选择分辨率，或下载来源提供的独立音轨。"}, "default": "best", "choices": [
       {"value": "best", "label": {"en": "Best available", "zh": "最高可用画质"}},
