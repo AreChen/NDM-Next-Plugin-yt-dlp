@@ -1,17 +1,37 @@
 {
   "schema": 1,
   "id": "yt-dlp",
-  "version": "0.1.3",
-  "name": {"en": "YouTube", "zh": "YouTube"},
-  "description": {"en": "Download YouTube video or audio with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube 视频或音频。"},
+  "version": "0.2.0",
+  "name": {"en": "Media Downloader", "zh": "流媒体下载"},
+  "description": {"en": "Download videos, audio, and playlists from YouTube, Bilibili, TikTok, and other sites with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube、Bilibili、抖音、TikTok 等网站的视频、音频和播放列表。"},
   "engine": "ndm-yt-dlp-engine",
   "engine_protocol": 1,
-  "inputs": [{"schemes": ["https", "http"], "hosts": ["youtube.com", "youtu.be", "youtube-nocookie.com"]}],
+  "inputs": [{
+    "schemes": ["https", "http"],
+    "hosts": [
+      "youtube.com", "youtu.be", "youtube-nocookie.com",
+      "bilibili.com", "bilibili.tv", "b23.tv", "biliintl.com",
+      "tiktok.com", "douyin.com", "iesdouyin.com", "vimeo.com", "dailymotion.com", "dai.ly",
+      "x.com", "twitter.com", "instagram.com", "facebook.com", "fb.watch",
+      "reddit.com", "redd.it", "twitch.tv", "kick.com", "bsky.app", "pinterest.com", "pin.it",
+      "weibo.com", "weibo.cn", "xiaohongshu.com", "xhslink.com",
+      "cctv.com", "cntv.cn", "youku.com", "iqiyi.com",
+      "soundcloud.com", "bandcamp.com", "mixcloud.com", "y.qq.com",
+      "rumble.com", "odysee.com", "rutube.ru", "streamable.com", "nicovideo.jp"
+    ],
+    "exclude_suffixes": [
+      ".m3u8", ".mpd", ".mp4", ".webm", ".mkv", ".mp3", ".m4a", ".flac", ".wav",
+      ".torrent", ".zip", ".rar", ".7z", ".pdf", ".exe", ".dmg"
+    ]
+  }],
+  "manual_inputs": [{"schemes": ["https", "http"], "exclude_suffixes": [".torrent"]}],
   "limits": {"active_tasks": 3, "download_threads": 16},
   "panel": "panel.js",
   "options": [
-    {"key": "quality", "kind": "choice", "label": {"en": "Quality", "zh": "画质"}, "default": "best", "choices": [
+    {"key": "quality", "kind": "choice", "label": {"en": "Quality", "zh": "画质"}, "help": {"en": "Choose a resolution or download an audio-only track if offered by the source.", "zh": "选择分辨率，或下载来源提供的独立音轨。"}, "default": "best", "choices": [
       {"value": "best", "label": {"en": "Best available", "zh": "最高可用画质"}},
+      {"value": "2160", "label": {"en": "Up to 2160p (4K)", "zh": "最高 2160p（4K）"}},
+      {"value": "1440", "label": {"en": "Up to 1440p", "zh": "最高 1440p"}},
       {"value": "1080", "label": {"en": "Up to 1080p", "zh": "最高 1080p"}},
       {"value": "720", "label": {"en": "Up to 720p", "zh": "最高 720p"}},
       {"value": "480", "label": {"en": "Up to 480p", "zh": "最高 480p"}},
@@ -63,7 +83,7 @@
     {"key": "proxy-url", "kind": "text", "max_length": 1024, "label": {"en": "Proxy address", "zh": "代理地址"}, "help": {"en": "Choose the protocol, then enter a host and port such as 127.0.0.1:8080 or [::1]:1080. A pasted full URL supplies its protocol.", "zh": "先选代理协议，再输入主机和端口，例如 127.0.0.1:8080 或 [::1]:1080。粘贴完整地址时使用地址中的协议。"}, "editor": {"kind": "proxy_address", "schemes": ["http", "https", "socks5", "socks5h", "socks4", "socks4a"], "required_when": "proxy-enabled"}}
   ],
   "tools": [
-    {"id": "download", "name": {"en": "YouTube download", "zh": "YouTube 下载"}, "description": {"en": "Download a YouTube video or playlist through NDM Next.", "zh": "通过 NDM Next 下载 YouTube 视频或播放列表。"}},
-    {"id": "audio", "name": {"en": "YouTube audio", "zh": "YouTube 音频"}, "description": {"en": "Download the audio of a YouTube video through NDM Next.", "zh": "通过 NDM Next 下载 YouTube 视频的音频。"}, "defaults": {"quality": "audio"}}
+    {"id": "download", "name": {"en": "Download streaming media", "zh": "下载流媒体"}, "description": {"en": "Download a supported video, audio track, playlist, or HLS/DASH URL through NDM Next.", "zh": "通过 NDM Next 下载受支持的网页视频、音频、播放列表或 HLS/DASH 链接。"}},
+    {"id": "audio", "name": {"en": "Download streaming audio", "zh": "下载流媒体音频"}, "description": {"en": "Download an available audio-only stream through NDM Next.", "zh": "通过 NDM Next 下载来源提供的独立音轨。"}, "defaults": {"quality": "audio"}}
   ]
 }

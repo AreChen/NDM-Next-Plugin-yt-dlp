@@ -60,6 +60,9 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
     let playlist = request.options.get("playlist").and_then(Value::as_bool) == Some(true);
     let subtitles = configure_subtitles(&mut command, &request.options)?;
     configure_proxy(&mut command, &request.options)?;
+    if !playlist {
+        command.args(["--playlist-items", "1"]);
+    }
     command
         .arg(if playlist {
             "--yes-playlist"
@@ -74,9 +77,9 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
         })
         .arg("--output")
         .arg(if playlist || subtitles {
-            "%(playlist_title,title).120B [%(playlist_id,id)s]/%(title).120B [%(id)s].%(ext)s"
+            "%(playlist_title,title).120B [%(playlist_id,id).64B]/%(title).120B [%(id).64B].%(ext)s"
         } else {
-            "%(title).150B [%(id)s].%(ext)s"
+            "%(title).150B [%(id).64B].%(ext)s"
         });
     if deno.is_file() {
         command
@@ -298,6 +301,8 @@ fn failure_reason(line: &str) -> Option<FailureReason> {
     } else if [
         "sign in to confirm",
         "login required",
+        "authentication required",
+        "log in to view",
         "private video",
         "http error 401",
         "http error 407",
@@ -319,7 +324,17 @@ fn failure_reason(line: &str) -> Option<FailureReason> {
     .any(|message| line.contains(message))
     {
         Some(FailureReason::Network)
-    } else if line.contains("requested format is not available") {
+    } else if [
+        "unsupported url",
+        "no video could be found",
+        "no video formats found",
+        "requested format is not available",
+        "drm protected",
+        "drm-protected",
+    ]
+    .iter()
+    .any(|message| line.contains(message))
+    {
         Some(FailureReason::Unsupported)
     } else {
         None
@@ -359,7 +374,7 @@ fn configure_video(
         command.arg("--ffmpeg-location").arg(media);
     }
     if quality == "audio" {
-        command.args(["--format", "bestaudio/best"]);
+        command.args(["--format", "bestaudio"]);
         return Ok(());
     }
     let container = options
@@ -428,7 +443,7 @@ fn format_expression(
 ) -> Result<String, FailureReason> {
     let height = match quality {
         "best" => String::new(),
-        "1080" | "720" | "480" => format!("[height<={quality}]"),
+        "2160" | "1440" | "1080" | "720" | "480" => format!("[height<={quality}]"),
         _ => return Err(FailureReason::InvalidOptions),
     };
     let (video, audio) = match container {
@@ -452,6 +467,7 @@ fn format_expression(
         return Ok(direct);
     }
     if video.is_empty() {
+        // yt-dlp's best format also covers sources with just one track type.
         return Ok(format!("bv*{height}+ba/b{height}"));
     }
     Ok(format!(
@@ -515,6 +531,33 @@ mod tests {
         let manifest: ndm_plugin_sdk::PluginManifest =
             serde_json::from_str(include_str!("../plugin.json")).unwrap();
         manifest.validate().unwrap();
+        for host in [
+            "www.youtube.com",
+            "www.bilibili.com",
+            "vimeo.com",
+            "soundcloud.com",
+        ] {
+            assert!(
+                manifest.inputs[0]
+                    .score("https", Some(host), "/watch")
+                    .is_some()
+            );
+        }
+        assert!(
+            manifest.inputs[0]
+                .score("https", Some("vimeo.com"), "/live.m3u8")
+                .is_none()
+        );
+        assert!(
+            manifest.manual_inputs[0]
+                .score("https", Some("example.test"), "/page")
+                .is_some()
+        );
+        assert!(
+            manifest.manual_inputs[0]
+                .score("https", Some("example.test"), "/file.torrent")
+                .is_none()
+        );
     }
 
     #[test]
@@ -522,6 +565,10 @@ mod tests {
         assert_eq!(
             format_expression("720", "auto", true).unwrap(),
             "bv*[height<=720]+ba/b[height<=720]"
+        );
+        assert_eq!(
+            format_expression("2160", "auto", false).unwrap(),
+            "b[height<=2160]"
         );
         assert_eq!(
             format_expression("720", "webm", false).unwrap(),
@@ -551,6 +598,14 @@ mod tests {
         assert_eq!(
             failure_reason("ERROR: HTTP Error 407: Proxy authentication required"),
             Some(FailureReason::Authentication),
+        );
+        assert_eq!(
+            failure_reason("ERROR: Unsupported URL: https://example.test/library"),
+            Some(FailureReason::Unsupported),
+        );
+        assert_eq!(
+            failure_reason("ERROR: The video is DRM protected"),
+            Some(FailureReason::Unsupported),
         );
     }
 
