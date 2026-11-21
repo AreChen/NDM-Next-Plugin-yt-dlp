@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "yt-dlp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": {"en": "YouTube", "zh": "YouTube"},
   "description": {"en": "Download YouTube video or audio with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube 视频或音频。"},
   "engine": "ndm-yt-dlp-engine",
@@ -17,7 +17,15 @@
       {"value": "480", "label": {"en": "Up to 480p", "zh": "最高 480p"}},
       {"value": "audio", "label": {"en": "Audio only", "zh": "仅音频"}}
     ]},
-    {"key": "playlist", "kind": "boolean", "label": {"en": "Download the playlist", "zh": "下载播放列表"}, "default": false}
+    {"key": "playlist", "kind": "boolean", "label": {"en": "Download the playlist", "zh": "下载播放列表"}, "default": false},
+    {"key": "subtitles", "kind": "choice", "label": {"en": "Subtitles", "zh": "字幕"}, "default": "off", "choices": [
+      {"value": "off", "label": {"en": "Off", "zh": "关闭"}},
+      {"value": "manual", "label": {"en": "Uploaded subtitles", "zh": "作者上传的字幕"}},
+      {"value": "auto", "label": {"en": "Uploaded and automatic", "zh": "含自动字幕"}}
+    ]},
+    {"key": "subtitle_languages", "kind": "text", "max_length": 128, "label": {"en": "Subtitle languages", "zh": "字幕语言"}, "default": "en,zh-Hans,zh-Hant"},
+    {"key": "proxy_enabled", "kind": "boolean", "label": {"en": "Use a separate proxy", "zh": "使用独立代理"}, "default": false},
+    {"key": "proxy_url", "kind": "text", "max_length": 1024, "label": {"en": "Proxy URL", "zh": "代理地址"}}
   ],
   "tools": [
     {"id": "download", "name": {"en": "YouTube download", "zh": "YouTube 下载"}, "description": {"en": "Download a YouTube video or playlist through NDM Next.", "zh": "通过 NDM Next 下载 YouTube 视频或播放列表。"}},
