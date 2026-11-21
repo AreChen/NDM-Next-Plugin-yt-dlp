@@ -388,7 +388,7 @@ fn configure_video(
         if container == "auto" {
             if !webm {
                 // Installed desktop versions with the older muxer set can still copy the original streams.
-                command.args(["--merge-output-format", "mkv"]);
+                command.args(["--merge-output-format", "mp4/mkv"]);
             }
         } else {
             command.args([
