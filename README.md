@@ -3,7 +3,7 @@
 Media Downloader uses yt-dlp's site extractors and generic media page parser.
 It matches common platforms such as YouTube, Bilibili, Douyin, TikTok, Vimeo,
 X, Instagram, Reddit, Twitch, SoundCloud and Bandcamp. The link must expose
-downloadable media to the pinned yt-dlp version. NDM reports protected streams
+downloadable media to the pinned yt-dlp version. OnesDM reports protected streams
 and unsupported pages as unsupported sources.
 
 The package includes pinned yt-dlp and Deno runtimes. OnesDM supplies
