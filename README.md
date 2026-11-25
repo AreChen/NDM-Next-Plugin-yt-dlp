@@ -1,4 +1,4 @@
-# NDM Next Media Downloader (yt-dlp)
+# OnesDM Media Downloader (yt-dlp)
 
 Media Downloader uses yt-dlp's site extractors and generic media page parser.
 It matches common platforms such as YouTube, Bilibili, Douyin, TikTok, Vimeo,
@@ -6,14 +6,14 @@ X, Instagram, Reddit, Twitch, SoundCloud and Bandcamp. The link must expose
 downloadable media to the pinned yt-dlp version. NDM reports protected streams
 and unsupported pages as unsupported sources.
 
-The package includes pinned yt-dlp and Deno runtimes. NDM Next supplies
+The package includes pinned yt-dlp and Deno runtimes. OnesDM supplies
 FFmpeg when a video needs separate audio and video tracks. **Prefer native**
 keeps the original container where possible. You can also choose MP4, WebM,
 or MKV. The engine copies compatible source streams and reuses yt-dlp's
 partial files when resuming. Older desktop builds with limited WebM output
 support can fall back to MKV for split streams.
 
-Install from the NDM Next plugin market or import the matching release ZIP.
+Install from the OnesDM plugin market or import the matching release ZIP.
 Paste a link in **New download**. For an unlisted site, choose **Media
 Downloader** under **Download engine**. Manual selection also accepts direct
 HLS and DASH URLs. This uses the desktop SDK's `manual_inputs` support.

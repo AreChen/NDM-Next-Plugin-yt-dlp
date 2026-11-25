@@ -1,7 +1,7 @@
 # Media Downloader
 
 Use the `yt-dlp` engine for a supported media page, an available audio track,
-or a playlist. Use `ndm_list_engines` with the source in NDM Next 0.6.0 or later
+or a playlist. Use `ndm_list_engines` with the source in OnesDM 0.6.0 or later
 to distinguish an automatic match from an engine you must select explicitly.
 Site compatibility depends on the bundled yt-dlp version and the tracks the
 page exposes.

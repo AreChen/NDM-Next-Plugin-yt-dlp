@@ -1,4 +1,4 @@
-"""Create a native NDM Next plugin package and SHA-256 sidecar."""
+"""Create a native OnesDM plugin package and SHA-256 sidecar."""
 import argparse
 import hashlib
 import io

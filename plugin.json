@@ -85,7 +85,7 @@
     {"key": "proxy-url", "kind": "text", "max_length": 1024, "label": {"en": "Proxy address", "zh": "代理地址"}, "help": {"en": "Choose the protocol, then enter a host and port such as 127.0.0.1:8080 or [::1]:1080. A pasted full URL supplies its protocol.", "zh": "先选代理协议，再输入主机和端口，例如 127.0.0.1:8080 或 [::1]:1080。粘贴完整地址时使用地址中的协议。"}, "editor": {"kind": "proxy_address", "schemes": ["http", "https", "socks5", "socks5h", "socks4", "socks4a"], "required_when": "proxy-enabled"}}
   ],
   "tools": [
-    {"id": "download", "name": {"en": "Download streaming media", "zh": "下载流媒体"}, "description": {"en": "Download a supported video, audio track, playlist, or HLS/DASH URL through NDM Next.", "zh": "通过 NDM Next 下载受支持的网页视频、音频、播放列表或 HLS/DASH 链接。"}},
-    {"id": "audio", "name": {"en": "Download streaming audio", "zh": "下载流媒体音频"}, "description": {"en": "Download an available audio-only stream through NDM Next.", "zh": "通过 NDM Next 下载来源提供的独立音轨。"}, "defaults": {"quality": "audio"}}
+    {"id": "download", "name": {"en": "Download streaming media", "zh": "下载流媒体"}, "description": {"en": "Download a supported video, audio track, playlist, or HLS/DASH URL through OnesDM.", "zh": "通过 OnesDM 下载受支持的网页视频、音频、播放列表或 HLS/DASH 链接。"}},
+    {"id": "audio", "name": {"en": "Download streaming audio", "zh": "下载流媒体音频"}, "description": {"en": "Download an available audio-only stream through OnesDM.", "zh": "通过 OnesDM 下载来源提供的独立音轨。"}, "defaults": {"quality": "audio"}}
   ]
 }
