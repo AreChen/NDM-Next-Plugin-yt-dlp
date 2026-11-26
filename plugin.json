@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "yt-dlp",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "name": {"en": "Media Downloader", "zh": "流媒体下载"},
   "description": {"en": "Download videos, audio, and playlists from YouTube, Bilibili, TikTok, and other sites with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube、Bilibili、抖音、TikTok 等网站的视频、音频和播放列表。"},
   "engine": "ndm-yt-dlp-engine",

@@ -32,6 +32,11 @@ yt-dlp's default. OnesDM 0.9.0 and newer also accept the per-task
 provided by the task, including those captured by the browser extension, take
 precedence over the plugin defaults.
 
+OnesDM 0.9.1 and newer display approximate totals for streams when yt-dlp can
+estimate the size. Split video and audio downloads report both tracks together.
+The local MP4 remux keeps the index at the end, saving an additional rewrite
+of the file.
+
 Open **Settings** on the installed Media Downloader card to save defaults and set a
 separate proxy. With the switch on, select the protocol and enter a host and
 port. You can paste a complete HTTP(S) or SOCKS proxy URL as well.
@@ -69,6 +74,9 @@ H.265 的播放取决于设备。旧版媒体工具的 WebM 合并可回退为 M
 **请求语言**。留空时沿用 yt-dlp 的默认值。OnesDM 0.9.0 起也可以通过 MCP 为任务
 指定 `user_agent_profile` 和 `accept_language`。任务显式提供或浏览器扩展
 捕获的请求头优先于插件默认值。
+
+OnesDM 0.9.1 起会显示 yt-dlp 提供的流大小估算。分开下载音轨和画面时会合计
+进度。本地 MP4 封装保留尾部索引，省去一次整文件重写。
 
 在已安装的流媒体下载卡片上打开 **设置** 可保存默认选项。开启 **使用独立代理**
 后请选择 HTTP(S) 或 SOCKS 协议，再填主机和端口，也可以粘贴完整地址。关闭时沿用系统网络设置。开启 AI 集成后，

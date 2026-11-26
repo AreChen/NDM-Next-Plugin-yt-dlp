@@ -1,12 +1,12 @@
 [package]
 name = "ndm-yt-dlp-engine"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 rust-version = "1.100"
 license = "MIT"
 
 [dependencies]
-ndm-plugin-sdk = { git = "https://github.com/AreChen/NDM-Next.git", rev = "537bff9d02befc9a1dc2d7be6dd11e14828e982d" }
+ndm-plugin-sdk = { git = "https://github.com/AreChen/OnesDM.git", rev = "4d45afae8fa41d30e145954494427947c5cb1d16" }
 serde_json = "1"
 tempfile = "3"
 

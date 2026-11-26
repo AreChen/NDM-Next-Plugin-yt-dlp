@@ -47,16 +47,49 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
         });
     let deno = tools.join(executable("deno"));
     let mut command = Command::new(tools.join(executable("yt-dlp")));
-    command.current_dir(&request.workspace).stdin(Stdio::piped())
-        .args(["--ignore-config", "--no-cache-dir", "--no-update", "--windows-filenames", "--continue",
-            "--socket-timeout", "25", "--retries", "3", "--fragment-retries", "3", "--quiet",
-            "--progress", "--newline", "--no-mtime", "--no-overwrites", "--no-simulate", "--encoding", "UTF-8",
-            "--progress-template", "download:NDM_PROGRESS %(progress.downloaded_bytes)j %(progress.total_bytes,progress.total_bytes_estimate)j",
-            "--progress-template", "postprocess:NDM_FINALIZING %(progress.status)s",
-            "--print", "after_move:NDM_RESULT %(filepath)j\t%(requested_subtitles.:.filepath)j",
-            "--batch-file", "-",
+    command
+        .current_dir(&request.workspace)
+        .stdin(Stdio::piped())
+        .args([
+            "--ignore-config",
+            "--no-cache-dir",
+            "--no-update",
+            "--windows-filenames",
+            "--continue",
+            "--socket-timeout",
+            "25",
+            "--retries",
+            "3",
+            "--fragment-retries",
+            "3",
+            "--quiet",
+            "--progress",
+            "--newline",
+            "--no-mtime",
+            "--no-overwrites",
+            "--no-simulate",
+            "--encoding",
+            "UTF-8",
+            "--progress-template",
+            concat!(
+                "download:NDM_PROGRESS %(progress.filename,info_dict.format_id)j\t",
+                "%(progress.{downloaded_bytes,total_bytes,total_bytes_estimate})j\t",
+                "%(info_dict.{filesize,filesize_approx,is_live,tbr,duration})j",
+            ),
+            "--progress-template",
+            "postprocess:NDM_FINALIZING %(progress.status)s",
+            "--print",
+            "after_move:NDM_RESULT %(filepath)j\t%(requested_subtitles.:.filepath)j",
+            "--batch-file",
+            "-",
         ])
-        .arg("--concurrent-fragments").arg(request.download_threads.map_or(1, |n| n.get().min(16)).to_string());
+        .arg("--concurrent-fragments")
+        .arg(
+            request
+                .download_threads
+                .map_or(1, |n| n.get().min(16))
+                .to_string(),
+        );
     let playlist = request.options.get("playlist").and_then(Value::as_bool) == Some(true);
     let subtitles = configure_subtitles(&mut command, &request.options)?;
     configure_proxy(&mut command, &request.options)?;
@@ -71,9 +104,9 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
         })
         .arg("--print")
         .arg(if playlist {
-            "before_dl:NDM_TITLE %(playlist_title,title)j"
+            "before_dl:NDM_TITLE %(playlist_title,title)j\t%(requested_formats.:.format_id)j"
         } else {
-            "before_dl:NDM_TITLE %(title)j"
+            "before_dl:NDM_TITLE %(title)j\t%(requested_formats.:.format_id)j"
         })
         .arg("--output")
         .arg(if playlist || subtitles {
@@ -136,9 +169,7 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
     let mut seen = HashSet::new();
     let mut title_reported = false;
     let mut failure = FailureReason::Other;
-    let mut highwater = 0u64;
-    let mut transferred = 0u64;
-    let mut finished_bytes = 0u64;
+    let mut progress = MediaProgress::default();
     loop {
         if worker.stopped() {
             stop(&mut child);
@@ -149,21 +180,19 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
-        if let Some(title) = line.strip_prefix("NDM_TITLE ") {
+        if let Some((title, formats)) = line
+            .strip_prefix("NDM_TITLE ")
+            .and_then(|line| line.split_once('\t'))
+        {
+            progress.track_count = serde_json::from_str::<Vec<String>>(formats)
+                .map_or(1, |formats| formats.len().max(1));
             if !title_reported && let Ok(title) = serde_json::from_str::<String>(title) {
                 title_reported = true;
                 let _ = worker.update_task(TaskUpdate::Title { title });
             }
         } else if let Some(line) = line.strip_prefix("NDM_PROGRESS ") {
-            let (downloaded, total) = parse_progress(line);
-            if let Some(downloaded) = downloaded {
-                transferred = transferred.saturating_add(downloaded.saturating_sub(highwater));
-                highwater = downloaded;
-                let _ = worker.progress(TransferProgress {
-                    downloaded: finished_bytes.saturating_add(downloaded),
-                    total: total.map(|total| finished_bytes.saturating_add(total)),
-                    transferred,
-                });
+            if let Some((update, estimate)) = progress.update(line, playlist) {
+                let _ = worker.progress_with_estimate(update, estimate);
             }
         } else if line == "NDM_FINALIZING started" {
             let _ = worker.update_task(TaskUpdate::Finalizing);
@@ -174,13 +203,13 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
             };
             for path in paths {
                 if seen.insert(path.clone()) {
-                    finished_bytes = finished_bytes.saturating_add(
+                    progress.finished = progress.finished.saturating_add(
                         fs::metadata(request.workspace.join(&path)).map_or(0, |m| m.len()),
                     );
                     files.push(path);
                 }
             }
-            highwater = 0;
+            progress.tracks.clear();
         } else if let Some(reason) = failure_reason(&line) {
             failure = reason;
         }
@@ -402,6 +431,9 @@ fn configure_video(
         .unwrap_or("best");
     if let Some(media) = media {
         command.arg("--ffmpeg-location").arg(media);
+        // Local downloads can play with the MP4 index at the end. Skip the
+        // extra pass that relocates the index for web playback.
+        command.args(["--postprocessor-args", "ffmpeg:-movflags -faststart"]);
     }
     if quality == "audio" {
         command.args(["--format", "bestaudio"]);
@@ -505,11 +537,90 @@ fn format_expression(
     ))
 }
 
-fn parse_progress(line: &str) -> (Option<u64>, Option<u64>) {
-    let mut values = line.split_whitespace();
-    let downloaded = values.next().and_then(|value| value.parse().ok());
-    let total = values.next().and_then(|value| value.parse().ok());
-    (downloaded, total)
+#[derive(Default)]
+struct MediaProgress {
+    tracks: BTreeMap<String, TrackProgress>,
+    track_count: usize,
+    transferred: u64,
+    finished: u64,
+}
+
+struct TrackProgress {
+    downloaded: u64,
+    exact: Option<u64>,
+    estimate: Option<u64>,
+}
+
+impl MediaProgress {
+    fn update(&mut self, line: &str, playlist: bool) -> Option<(TransferProgress, Option<u64>)> {
+        let (name, values) = line.split_once('\t')?;
+        let (progress, information) = values.split_once('\t')?;
+        let name = serde_json::from_str::<String>(name).unwrap_or_default();
+        let progress = serde_json::from_str::<Value>(progress).ok()?;
+        let information = serde_json::from_str::<Value>(information).unwrap_or_default();
+        let downloaded = progress["downloaded_bytes"].as_u64()?;
+        let exact = progress["total_bytes"]
+            .as_u64()
+            .or_else(|| information["filesize"].as_u64())
+            .filter(|&size| size >= downloaded);
+        let estimate = (exact.is_none() && information["is_live"].as_bool() != Some(true))
+            .then(|| {
+                progress["total_bytes_estimate"]
+                    .as_f64()
+                    .or_else(|| information["filesize_approx"].as_f64())
+                    .or_else(|| {
+                        // yt-dlp reports stream bitrate in kilobits per second.
+                        Some(
+                            information["tbr"].as_f64()? * information["duration"].as_f64()? * 125.,
+                        )
+                    })
+                    .filter(|size| (1. ..u64::MAX as f64).contains(size))
+                    .map(|size| size.round() as u64)
+                    .filter(|&size| size >= downloaded)
+            })
+            .flatten();
+        let previous = self.tracks.insert(
+            name,
+            TrackProgress {
+                downloaded,
+                exact,
+                estimate,
+            },
+        );
+        self.transferred = self.transferred.saturating_add(
+            downloaded.saturating_sub(previous.map_or(0, |track| track.downloaded)),
+        );
+        let downloaded = self.tracks.values().fold(self.finished, |bytes, track| {
+            bytes.saturating_add(track.downloaded)
+        });
+        let has_all_tracks = !playlist && self.tracks.len() == self.track_count.max(1);
+        let mut total = None;
+        let mut estimated_total = None;
+        if has_all_tracks {
+            total = self
+                .tracks
+                .values()
+                .try_fold(self.finished, |bytes, track| {
+                    Some(bytes.saturating_add(track.exact?))
+                });
+            if total.is_none() {
+                estimated_total = self
+                    .tracks
+                    .values()
+                    .try_fold(self.finished, |bytes, track| {
+                        Some(bytes.saturating_add(track.exact.or(track.estimate)?))
+                    });
+            }
+        }
+        Some((
+            TransferProgress {
+                downloaded,
+                total,
+                transferred: self.transferred,
+            },
+            estimated_total,
+        ))
+    }
 }
 
 fn output_path(workspace: &Path, file: &Path) -> io::Result<String> {
@@ -610,10 +721,55 @@ mod tests {
                 .unwrap()
                 .contains("opus")
         );
-        assert_eq!(parse_progress("64 null"), (Some(64), None));
-        assert_eq!(parse_progress("1024 2048"), (Some(1024), Some(2048)));
         assert!(format_expression("--exec", "auto", true).is_err());
         assert!(format_expression("best", "--exec", true).is_err());
+    }
+
+    #[test]
+    fn reports_fragment_estimates_and_keeps_exact_size_separate() {
+        let mut progress = MediaProgress::default();
+        let (update, estimated) = progress
+            .update(
+                r#""clip.mp4"	{"downloaded_bytes":64,"total_bytes_estimate":193.6}	{}"#,
+                false,
+            )
+            .unwrap();
+        assert_eq!(update.downloaded, 64);
+        assert_eq!(update.total, None);
+        assert_eq!(estimated, Some(194));
+        let (update, estimated) = progress
+            .update(
+                r#""clip.mp4"	{"downloaded_bytes":162,"total_bytes":162}	{}"#,
+                false,
+            )
+            .unwrap();
+        assert_eq!((update.total, estimated), (Some(162), None));
+        assert_eq!(update.transferred, 162);
+        let (_, estimated) = progress
+            .update(r#""live.mp4"	{"downloaded_bytes":64,"total_bytes_estimate":194.0}	{"is_live":true}"#, false)
+            .unwrap();
+        assert_eq!(estimated, None);
+    }
+
+    #[test]
+    fn reports_the_size_of_all_selected_streams() {
+        let mut progress = MediaProgress {
+            track_count: 2,
+            ..Default::default()
+        };
+        let (video, estimated) = progress
+            .update(
+                r#""video"	{"downloaded_bytes":600,"total_bytes":600}	{}"#,
+                false,
+            )
+            .unwrap();
+        assert_eq!((video.total, estimated), (None, None));
+        let audio = r#""audio"	{"downloaded_bytes":20}	{"tbr":12.5,"duration":0.1}"#;
+        let (update, estimated) = progress.update(audio, false).unwrap();
+        assert_eq!(update.downloaded, 620);
+        assert_eq!(estimated, Some(756));
+        let (playlist, estimated) = progress.update(audio, true).unwrap();
+        assert_eq!((playlist.total, estimated), (None, None));
     }
 
     #[test]
