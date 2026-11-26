@@ -15,6 +15,12 @@ page exposes.
   chosen resolution and container support that track.
 - Set `"playlist":true` in `options` for a requested playlist. With playlist mode
   off, a playlist-only link queues its first item.
+- With OnesDM 0.9.0, use the task's `user_agent_profile` (`iphone_safari` or
+  `android_chrome`), `accept_language`, and `referer` for relevant mobile requests.
+  The plugin also accepts `options` fields `user-agent` and `accept-language`
+  for saved defaults. Explicit and browser-captured request headers take
+  precedence. Use `ndm_probe_streams` or the browser extension when a page
+  needs another way to discover a native HLS or DASH stream.
 - To request author's subtitles in Simplified Chinese and English, pass
   `"options":{"subtitles":"manual","subtitle-languages":"zh-Hans,en"}`.
   Use `"subtitles":"auto"` to include automatic subtitles. Tracks depend on

@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "ndm-yt-dlp-engine"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "libc",
  "ndm-plugin-sdk",

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "yt-dlp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "name": {"en": "Media Downloader", "zh": "流媒体下载"},
   "description": {"en": "Download videos, audio, and playlists from YouTube, Bilibili, TikTok, and other sites with yt-dlp.", "zh": "使用 yt-dlp 下载 YouTube、Bilibili、抖音、TikTok 等网站的视频、音频和播放列表。"},
   "engine": "ndm-yt-dlp-engine",
@@ -81,6 +81,8 @@
       {"value": "pl", "label": {"en": "Polish", "zh": "波兰语"}},
       {"value": "uk", "label": {"en": "Ukrainian", "zh": "乌克兰语"}}
     ]}},
+    {"key": "user-agent", "kind": "text", "max_length": 1024, "label": {"en": "User-Agent", "zh": "User-Agent"}, "help": {"en": "Optional device User-Agent. Headers captured by the browser or passed for this task take precedence.", "zh": "可填写手机或桌面 UA。浏览器捕获的请求头和单任务传入的 UA 优先。"}},
+    {"key": "accept-language", "kind": "text", "max_length": 256, "label": {"en": "Request language", "zh": "请求语言"}, "help": {"en": "Optional Accept-Language, for example zh-CN,zh;q=0.9.", "zh": "可填写 Accept-Language，例如 zh-CN,zh;q=0.9。"}},
     {"key": "proxy-enabled", "kind": "boolean", "label": {"en": "Use a separate proxy", "zh": "使用独立代理"}, "default": false},
     {"key": "proxy-url", "kind": "text", "max_length": 1024, "label": {"en": "Proxy address", "zh": "代理地址"}, "help": {"en": "Choose the protocol, then enter a host and port such as 127.0.0.1:8080 or [::1]:1080. A pasted full URL supplies its protocol.", "zh": "先选代理协议，再输入主机和端口，例如 127.0.0.1:8080 或 [::1]:1080。粘贴完整地址时使用地址中的协议。"}, "editor": {"kind": "proxy_address", "schemes": ["http", "https", "socks5", "socks5h", "socks4", "socks4a"], "required_when": "proxy-enabled"}}
   ],

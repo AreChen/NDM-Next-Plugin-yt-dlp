@@ -1,7 +1,7 @@
 #[cfg(unix)]
 use std::time::Instant;
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     fs,
     io::{self, BufRead, BufReader, Write},
     path::{Component, Path, PathBuf},
@@ -88,6 +88,7 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
             .arg(format!("deno:{}", deno.display()));
     }
     configure_video(&mut command, &request.options, media.as_deref())?;
+    let headers = web_headers(headers, &request.options)?;
     let _header_config = if headers.is_empty() {
         None
     } else {
@@ -192,6 +193,35 @@ fn download(request: DownloadRequest, worker: &Worker) -> Result<Vec<String>, Fa
         return Err(FailureReason::Other);
     }
     Ok(files)
+}
+
+fn web_headers(
+    observed: &BTreeMap<String, String>,
+    options: &Map<String, Value>,
+) -> Result<BTreeMap<String, String>, FailureReason> {
+    let mut headers: BTreeMap<_, _> = observed
+        .iter()
+        .map(|(name, value)| (name.to_ascii_lowercase(), value.clone()))
+        .collect();
+    for (key, max) in [("user-agent", 1024), ("accept-language", 256)] {
+        let Some(value) = options.get(key) else {
+            continue;
+        };
+        let value = value.as_str().ok_or(FailureReason::InvalidSource)?;
+        if value.is_empty() {
+            continue;
+        }
+        if value.trim().is_empty()
+            || value.len() > max
+            || !value.bytes().all(|b| matches!(b, b' '..=b'~'))
+        {
+            return Err(FailureReason::InvalidSource);
+        }
+        headers
+            .entry(key.to_owned())
+            .or_insert_with(|| value.to_owned());
+    }
+    Ok(headers)
 }
 
 fn configure_subtitles(
@@ -607,6 +637,30 @@ mod tests {
         assert_eq!(
             failure_reason("ERROR: The video is DRM protected"),
             Some(FailureReason::Unsupported),
+        );
+    }
+
+    #[test]
+    fn mobile_settings_supply_missing_headers_and_keep_captured_values() {
+        let mut options = Map::from_iter([
+            ("user-agent".into(), "Mobile Safari preset".into()),
+            ("accept-language".into(), "zh-CN,zh;q=0.9".into()),
+        ]);
+        let defaults = web_headers(&BTreeMap::new(), &options).unwrap();
+        assert_eq!(defaults["user-agent"], "Mobile Safari preset");
+        assert_eq!(defaults["accept-language"], "zh-CN,zh;q=0.9");
+        let observed = BTreeMap::from([
+            ("User-Agent".into(), "Browser device".into()),
+            ("Referer".into(), "https://example.org/watch".into()),
+        ]);
+        let headers = web_headers(&observed, &options).unwrap();
+        assert_eq!(headers["user-agent"], "Browser device");
+        assert_eq!(headers["referer"], "https://example.org/watch");
+        assert_eq!(headers["accept-language"], "zh-CN,zh;q=0.9");
+        options.insert("accept-language".into(), "en\r\nCookie: rejected".into());
+        assert_eq!(
+            web_headers(&observed, &options),
+            Err(FailureReason::InvalidSource)
         );
     }
 

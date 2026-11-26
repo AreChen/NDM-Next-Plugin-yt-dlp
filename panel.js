@@ -9,5 +9,7 @@ function panel(context) {
     {key: "playlist"},
     {key: "subtitles"},
     {key: "subtitle-languages"},
+    {key: "user-agent"},
+    {key: "accept-language"},
   ]};
 }

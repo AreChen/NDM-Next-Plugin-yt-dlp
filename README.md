@@ -25,6 +25,13 @@ automatic subtitles, then select one or more languages from the list. Command
 line calls use comma-separated codes such as `en,zh-Hans,zh-Hant`. Subtitle
 files are saved alongside the media when the video provides those tracks.
 
+For mobile sources, use **User-Agent** and **Request language** in the download
+options or save defaults in the plugin settings. Leave either blank to use
+yt-dlp's default. OnesDM 0.9.0 and newer also accept the per-task
+`user_agent_profile` and `accept_language` fields through MCP. Request headers
+provided by the task, including those captured by the browser extension, take
+precedence over the plugin defaults.
+
 Open **Settings** on the installed Media Downloader card to save defaults and set a
 separate proxy. With the switch on, select the protocol and enter a host and
 port. You can paste a complete HTTP(S) or SOCKS proxy URL as well.
@@ -57,6 +64,11 @@ H.265 的播放取决于设备。旧版媒体工具的 WebM 合并可回退为 M
 
 字幕可选择仅作者上传或包含自动字幕，并从列表勾选多种语言。命令行调用可传入
 逗号分隔的代码，例如 `en,zh-Hans,zh-Hant`。视频提供的相应字幕会随视频保存。
+
+遇到需要手机请求的来源，可以在下载选项或插件设置中设置 **User-Agent** 和
+**请求语言**。留空时沿用 yt-dlp 的默认值。OnesDM 0.9.0 起也可以通过 MCP 为任务
+指定 `user_agent_profile` 和 `accept_language`。任务显式提供或浏览器扩展
+捕获的请求头优先于插件默认值。
 
 在已安装的流媒体下载卡片上打开 **设置** 可保存默认选项。开启 **使用独立代理**
 后请选择 HTTP(S) 或 SOCKS 协议，再填主机和端口，也可以粘贴完整地址。关闭时沿用系统网络设置。开启 AI 集成后，
